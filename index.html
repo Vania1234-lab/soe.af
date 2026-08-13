@@ -248,6 +248,134 @@ body.alerta-ocorrencia-ativo #listaPendentes .ocorrencia-card:first-child{animat
 .turma-vazia{padding:26px;text-align:center;border:1px dashed #cbd6e4;border-radius:14px;color:#687587;background:#fafcff}
 @media(max-width:820px){.turmas-topo{grid-template-columns:1fr}}
 
+
+/* ===== Menu principal do gestor em uma única linha ===== */
+@media (min-width: 1100px){
+  .menu-diretor,
+  .menu-grid,
+  .atalhos-grid,
+  .dashboard-menu{
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  }
+  .menu-diretor > *,
+  .menu-grid > *,
+  .atalhos-grid > *,
+  .dashboard-menu > *{
+    min-width:0 !important;
+  }
+}
+
+
+/* ===== Tela inicial do gestor: atalhos centralizados ===== */
+@media (min-width: 1100px){
+  .menu-diretor{
+    display:grid !important;
+    grid-template-columns:repeat(5, 155px) !important;
+    justify-content:center !important;
+    align-items:stretch !important;
+    gap:34px !important;
+    max-width:none !important;
+    width:100% !important;
+    margin:50px auto 28px !important;
+  }
+
+  .menu-diretor .menu-card{
+    width:155px !important;
+    height:215px !important;
+    min-height:215px !important;
+    padding:22px 14px !important;
+    margin:0 !important;
+  }
+
+  .menu-diretor .menu-card:nth-child(4),
+  .menu-diretor .menu-card:nth-child(5){
+    grid-column:auto !important;
+    margin-left:0 !important;
+  }
+
+  .menu-diretor .menu-icone{
+    width:68px !important;
+    height:68px !important;
+    font-size:32px !important;
+  }
+
+  .menu-diretor .menu-card{
+    font-size:16px !important;
+  }
+
+  .menu-diretor .menu-seta{
+    font-size:28px !important;
+  }
+}
+
+
+/* ===== Navegação do gestor em telas separadas ===== */
+#barraNavegacaoInterna:not(.hidden){margin:22px 0 18px}
+.secao-diretor-oculta{display:none !important}
+
+/* ===== Atalhos iniciais 50% maiores ===== */
+@media (min-width: 1250px){
+  #menuInicialDiretor.menu-diretor{
+    grid-template-columns:repeat(5, 232px) !important;
+    gap:24px !important;
+    justify-content:center !important;
+    margin:42px auto 30px !important;
+  }
+  #menuInicialDiretor .menu-card{
+    width:232px !important;
+    height:322px !important;
+    min-height:322px !important;
+    padding:30px 18px !important;
+    font-size:22px !important;
+    border-radius:22px !important;
+  }
+  #menuInicialDiretor .menu-icone{
+    width:102px !important;
+    height:102px !important;
+    font-size:48px !important;
+  }
+  #menuInicialDiretor .menu-seta{font-size:38px !important}
+}
+
+
+/* ===== Áreas internas ocupam a tela como páginas próprias ===== */
+body.view-interna-gestor main.container{
+  max-width:none !important;
+  width:100% !important;
+  margin:0 !important;
+  padding:0 28px 36px !important;
+}
+body.view-interna-gestor #barraNavegacaoInterna{
+  margin:0 -28px 24px !important;
+  padding:18px 28px !important;
+  background:#fff;
+  border-bottom:1px solid #dfe7f1;
+  position:sticky;
+  top:0;
+  z-index:30;
+}
+body.view-interna-gestor #secaoPendentes,
+body.view-interna-gestor #secaoUsuarios,
+body.view-interna-gestor #secaoEstudantes,
+body.view-interna-gestor #secaoNovaOcorrencia,
+body.view-interna-gestor #secaoFiltros,
+body.view-interna-gestor #secaoFinalizadas,
+body.view-interna-gestor #secaoLixeira{
+  width:100% !important;
+  max-width:none !important;
+  margin-left:0 !important;
+  margin-right:0 !important;
+}
+
+
+/* Correção: ao entrar em uma seção, o menu inicial deve desaparecer de verdade */
+#menuInicialDiretor.hidden{
+  display:none !important;
+}
+#resumoInicialGestor.hidden{
+  display:none !important;
+}
+
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
@@ -280,7 +408,7 @@ body.alerta-ocorrencia-ativo #listaPendentes .ocorrencia-card:first-child{animat
 </div>
 </header>
 <main class="container">
-<section class="grid-cards">
+<section id="resumoInicialGestor" class="grid-cards">
 <div class="card"><span class="rotulo">Estudantes</span><div class="numero" id="qtdEstudantes">0</div></div>
 <div class="card"><span class="rotulo">Usuários</span><div class="numero" id="qtdProfessores">0</div></div>
 <div class="card"><span class="rotulo">Pendentes</span><div class="numero" id="qtdPendentes">0</div></div>
@@ -2115,8 +2243,10 @@ function ocultarSecoesDiretor(){
 }
 function abrirViewDiretor(view){
   if(view==="ocorrencias") pararAlertaCompleto();
+  document.body.classList.add("view-interna-gestor");
   ocultarSecoesDiretor();
   document.getElementById("menuInicialDiretor")?.classList.add("hidden");
+  document.getElementById("resumoInicialGestor")?.classList.add("hidden");
   document.getElementById("barraNavegacaoInterna")?.classList.remove("hidden");
   const titulo=document.getElementById("tituloSecaoDiretor");
   if(titulo) titulo.textContent=titulosDiretor[view]||"";
@@ -2136,8 +2266,10 @@ function abrirViewDiretor(view){
   window.scrollTo({top:0,behavior:"smooth"});
 }
 function voltarInicioDiretor(){
+  document.body.classList.remove("view-interna-gestor");
   ocultarSecoesDiretor();
   document.getElementById("menuInicialDiretor")?.classList.remove("hidden");
+  document.getElementById("resumoInicialGestor")?.classList.remove("hidden");
   document.getElementById("barraNavegacaoInterna")?.classList.add("hidden");
   window.scrollTo({top:0,behavior:"smooth"});
 }
