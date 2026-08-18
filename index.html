@@ -1325,9 +1325,22 @@ async function enviarEstudanteParaLixeira(id){
 async function enviarOcorrenciaParaLixeira(id){
   const ocorrencia=ocorrencias.find(o=>o.id===id);
   if(!ocorrencia)return;
-  if(!confirm(`Enviar a ocorrência de ${ocorrencia.alunoNome||"este estudante"} para a lixeira?`))return;
-  await updateDoc(doc(db,"ocorrencias",id),{excluida:true,excluidaEm:serverTimestamp(),excluidaPor:usuarioAtual?.uid||null});
-  toast("Ocorrência enviada para a lixeira.");
+  const nomeAluno=nomesEnvolvidos(ocorrencia)||ocorrencia.alunoNome||"este estudante";
+  if(!confirm(`Excluir a ocorrência de ${nomeAluno}? Ela será enviada para a lixeira e o professor receberá a devolutiva de que a ocorrência foi excluída pela gestão.`))return;
+
+  const agora=serverTimestamp();
+  await updateDoc(doc(db,"ocorrencias",id),{
+    excluida:true,
+    excluidaEm:agora,
+    excluidaPor:usuarioAtual?.uid||null,
+    excluidaPorNome:usuarioAtual?.nome||usuarioAtual?.email||"Gestão",
+    devolutivaProfessor:"Ocorrência excluída pela gestão.",
+    devolutivaDirecao:"Ocorrência excluída pela gestão.",
+    parecerGestor:"Ocorrência excluída pela gestão.",
+    resultadoGestao:"Excluída pela gestão",
+    atualizadaEm:agora
+  });
+  toast("Ocorrência enviada para a lixeira. O professor receberá a devolutiva: ocorrência excluída pela gestão.");
 }
 async function restaurarEstudante(id){await updateDoc(doc(db,"estudantes",id),{excluido:false,restauradoEm:serverTimestamp()});toast("Estudante restaurado.");}
 async function restaurarOcorrencia(id){await updateDoc(doc(db,"ocorrencias",id),{excluida:false,restauradaEm:serverTimestamp()});toast("Ocorrência restaurada.");}
@@ -1823,7 +1836,7 @@ function render(){
   const termoEstudante=normalizarBusca(filtroEstudante);
   const estudantesVisiveis=estudantes.filter(a=>a.excluido!==true);
   const estudantesExcluidos=estudantes.filter(a=>a.excluido===true);
-  const ocorrenciasVisiveis=[...ocorrencias];
+  const ocorrenciasVisiveis=ocorrencias.filter(o=>o.excluida!==true);
   const ocorrenciasExcluidas=ocorrencias.filter(o=>o.excluida===true);
   atualizarOpcoesFiltrosOcorrencia();
 
