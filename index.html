@@ -535,9 +535,7 @@ body.view-interna-gestor #secaoLixeira{
             <div class="campo"><label>Nome completo</label><input id="alunoNome" required=""/></div>
             <div class="campo"><label>R.A.</label><input id="alunoRa" required=""/></div>
             <div class="campo"><label>Dígito</label><input id="alunoDigito" maxlength="2"/></div>
-            <div class="campo"><label>Responsável</label><input id="alunoResponsavel"/></div>
-            <div class="campo"><label>Contato</label><input id="alunoContato"/></div>
-            <button class="btn btn-primario campo full" type="submit">Salvar estudante</button>
+                        <button class="btn btn-primario campo full" type="submit">Salvar estudante</button>
           </form>
 
           <div class="import-box">
@@ -550,8 +548,7 @@ body.view-interna-gestor #secaoLixeira{
             </div>
             <div class="info-importacao">
               A lista será cadastrada automaticamente na turma aberta. Colunas aceitas:
-              <strong>Nome</strong>, <strong>RA</strong>, <strong>Dígito</strong>,
-              <strong>Responsável</strong> e <strong>Contato</strong>.
+              <strong>Nome</strong>, <strong>RA</strong> e <strong>Dígito</strong>.
               Se a planilha possuir uma coluna Turma, ela será ignorada e será usada a turma que está aberta.
             </div>
             <div class="import-resumo hidden" id="resumoImportacao"></div>
@@ -665,8 +662,8 @@ body.view-interna-gestor #secaoLixeira{
 <label>Providência tomada pela direção</label>
 <select id="providenciaDirecao">
 <option value="">Selecione a providência</option>
-<option value="Advertência verbal">Advertência verbal</option>
-<option value="Advertência por escrito">Advertência por escrito</option>
+<option value="Orientação verbal">Orientação verbal</option>
+<option value="Orientação por escrito">Orientação por escrito</option>
 <option value="Suspensão">Suspensão</option>
 </select>
 </div>
@@ -689,6 +686,7 @@ body.view-interna-gestor #secaoLixeira{
 </div>
 <div class="campo full hidden" id="camposContatoResponsavel">
 <div class="form-grid">
+<div class="campo"><label>Nome do responsável contatado</label><input id="nomeResponsavelContatado" placeholder="Ex.: Maria da Silva"/></div>
 <div class="campo"><label>Data do contato</label><input id="dataContato" type="date"/></div>
 <div class="campo"><label>Forma de contato</label>
 <select id="formaContato">
@@ -1128,8 +1126,6 @@ function converterLinhaEstudante(linha){
     turma:valorDaLinha(linha,["turma","série","serie","classe"]),
     ra:valorDaLinha(linha,["ra","r.a.","registro do aluno"]),
     digito:valorDaLinha(linha,["dígito","digito","dv"]),
-    responsavel:valorDaLinha(linha,["responsável","responsavel","nome do responsável","nome do responsavel"]),
-    contato:valorDaLinha(linha,["contato","telefone","celular","telefone do responsável","telefone do responsavel"])
   };
 }
 
@@ -1155,7 +1151,7 @@ function renderPreviewImportacao(){
   area.innerHTML=`<table>
     <thead>
       <tr>
-        <th>Nome</th><th>Turma</th><th>R.A.</th><th>Dígito</th><th>Responsável</th><th>Contato</th>
+        <th>Nome</th><th>Turma</th><th>R.A.</th><th>Dígito</th>
       </tr>
     </thead>
     <tbody>
@@ -1164,8 +1160,6 @@ function renderPreviewImportacao(){
         <td>${esc(a.turma)}</td>
         <td>${esc(a.ra)}</td>
         <td>${esc(a.digito)}</td>
-        <td>${esc(a.responsavel)}</td>
-        <td>${esc(a.contato)}</td>
       </tr>`).join("")}
     </tbody>
   </table>
@@ -1217,8 +1211,8 @@ $("#arquivoEstudantes").addEventListener("change",async evento=>{
 
 $("#baixarModelo").addEventListener("click",()=>{
   const conteudo=[
-    ["Nome","RA","Dígito","Responsável","Contato"],
-    ["Maria da Silva","7º A","123456789","0","Ana da Silva","(14) 99999-9999"]
+    ["Nome","RA","Dígito"],
+    ["Maria da Silva","123456789","0"]
   ];
 
   const csv="\uFEFF"+conteudo
@@ -1258,8 +1252,6 @@ $("#importarEstudantes").addEventListener("click",async()=>{
           turma:aluno.turma,
           ra:aluno.ra,
           digito:aluno.digito,
-          responsavel:aluno.responsavel,
-          contato:aluno.contato,
           criadoEm:serverTimestamp(),
           origemCadastro:"planilha",
           ativo:true
@@ -1315,24 +1307,6 @@ async function redefinirSenhaProfessor(id){
   await sendPasswordResetEmail(authCadastroProfessor,professor.email);
   toast("E-mail de redefinição enviado.");
 }
-async function editarResponsavelEstudante(id){
-  const aluno=estudantes.find(a=>a.id===id);
-  if(!aluno)return;
-
-  const novoResponsavel=prompt("Digite o nome do responsável:",aluno.responsavel||"");
-  if(novoResponsavel===null)return;
-
-  const novoContato=prompt("Digite o contato do responsável:",aluno.contato||"");
-  if(novoContato===null)return;
-
-  await updateDoc(doc(db,"estudantes",id),{
-    responsavel:novoResponsavel.trim(),
-    contato:novoContato.trim(),
-    atualizadoEm:serverTimestamp()
-  });
-  toast("Responsável e contato atualizados.");
-}
-
 async function alternarEstudante(id){
   const aluno=estudantes.find(a=>a.id===id);
   if(!aluno)return;
@@ -1550,7 +1524,12 @@ async function excluirTurma(id){
     toast(`A turma ${nome} possui ${qtd} estudante(s). Remova ou transfira os estudantes antes de excluir a turma.`);
     return;
   }
-  if(!confirm(`Excluir a turma ${nome}?`))return;
+  const confirmacao=prompt(`ATENÇÃO: você está prestes a excluir a turma ${nome}. Esta ação não poderá ser desfeita.\n\nPara confirmar, digite SIM:`);
+  if(confirmacao===null)return;
+  if(String(confirmacao).trim().toLowerCase()!=="sim"){
+    toast("Exclusão cancelada. Para excluir a turma é necessário digitar SIM.");
+    return;
+  }
   await deleteDoc(doc(db,"turmas",id));
   toast(`Turma ${nome} excluída.`);
 }
@@ -1759,7 +1738,6 @@ $("#formEstudante").addEventListener("submit", async e => {
   await addDoc(collection(db,"estudantes"),{
     nome:$("#alunoNome").value.trim(), turma,
     ra:$("#alunoRa").value.trim(), digito:$("#alunoDigito").value.trim(),
-    responsavel:$("#alunoResponsavel").value.trim(), contato:$("#alunoContato").value.trim(),
     ativo:true, criadoEm:serverTimestamp()
   });
   e.target.reset();
@@ -1831,6 +1809,7 @@ function formatarContatoResponsavel(o){
   const situacao=o.responsavelComunicado||"Não informado";
   if(situacao!=="Sim") return situacao;
   const partes=["Sim"];
+  if(o.nomeResponsavelContatado) partes.push(`Responsável: ${o.nomeResponsavelContatado}`);
   if(o.formaContato) partes.push(o.formaContato);
   if(o.dataContato){
     const [a,m,d]=String(o.dataContato).split("-");
@@ -1862,9 +1841,7 @@ function render(){
     const correspondeTermo=!termoEstudante ||
       normalizarBusca(a.nome).includes(termoEstudante) ||
       normalizarBusca(a.turma).includes(termoEstudante) ||
-      normalizarBusca(`${a.ra||""}-${a.digito||""}`).includes(termoEstudante) ||
-      normalizarBusca(a.responsavel).includes(termoEstudante) ||
-      normalizarBusca(a.contato).includes(termoEstudante);
+      normalizarBusca(`${a.ra||""}-${a.digito||""}`).includes(termoEstudante);
     return correspondeSerie && correspondeTermo;
   });
 
@@ -1886,7 +1863,7 @@ function render(){
   if(resumoPendentesTopo) resumoPendentesTopo.textContent=pend.length===1?"1 aguardando atendimento":`${pend.length} aguardando atendimento`;
   const textoPendentesTopo=$("#textoPendentesTopo");
   if(textoPendentesTopo) textoPendentesTopo.textContent=pend.length?"As ocorrências mais recentes aparecem primeiro.":"Nenhuma ocorrência exige atendimento neste momento.";
-  $("#listaEstudantes").innerHTML=estudantesFiltrados.length ? `<div class="tabela-wrap"><table><thead><tr><th>Nome</th><th>Turma</th><th>R.A.</th><th>Responsável</th><th>Contato</th><th>Status</th><th>Ações</th></tr></thead><tbody>${estudantesFiltrados.map(a=>`<tr><td><strong>${esc(a.nome)}</strong></td><td>${esc(a.turma)}</td><td>${esc(a.ra)}-${esc(a.digito)}</td><td>${esc(a.responsavel||"Não informado")}</td><td>${esc(a.contato||"Não informado")}</td><td><span class="badge ${a.ativo===false?"status-inativo":"status-ativo"}">${a.ativo===false?"Inativo":"Ativo"}</span></td><td><div class="acoes"><button class="btn btn-secundario btn-mini" data-edit-responsavel="${a.id}">Editar responsável</button><button class="btn btn-mini ${a.ativo===false?"btn-sucesso":"btn-perigo"}" data-toggle-aluno="${a.id}">${a.ativo===false?"Ativar":"Inativar"}</button><button class="btn btn-perigo btn-mini" data-excluir-aluno="${a.id}">Excluir</button></div></td></tr>`).join("")}</tbody></table></div>` : '<div class="vazio">Nenhum estudante localizado.</div>';
+  $("#listaEstudantes").innerHTML=estudantesFiltrados.length ? `<div class="tabela-wrap"><table><thead><tr><th>Nome</th><th>Turma</th><th>R.A.</th><th>Status</th><th>Ações</th></tr></thead><tbody>${estudantesFiltrados.map(a=>`<tr><td><strong>${esc(a.nome)}</strong></td><td>${esc(a.turma)}</td><td>${esc(a.ra)}-${esc(a.digito)}</td><td><span class="badge ${a.ativo===false?"status-inativo":"status-ativo"}">${a.ativo===false?"Inativo":"Ativo"}</span></td><td><div class="acoes"><button class="btn btn-mini ${a.ativo===false?"btn-sucesso":"btn-perigo"}" data-toggle-aluno="${a.id}">${a.ativo===false?"Ativar":"Inativar"}</button><button class="btn btn-perigo btn-mini" data-excluir-aluno="${a.id}">Excluir</button></div></td></tr>`).join("")}</tbody></table></div>` : '<div class="vazio">Nenhum estudante localizado.</div>';
   const nomePerfilUsuario=perfil=>perfil==="professor"?"Professor":perfil==="funcionario"?"Funcionário":perfil==="lider_clube"?"Líder de clube":"Usuário";
   $("#listaProfessores").innerHTML=professores.length ? `<div class="tabela-wrap"><table><thead><tr><th>Nome</th><th>Perfil</th><th>E-mail</th><th>Status</th><th>Ações</th></tr></thead><tbody>${professores.map(p=>`<tr><td><strong>${esc(p.nome||"")}</strong></td><td>${esc(nomePerfilUsuario(p.perfil))}</td><td>${esc(p.email||"")}</td><td><span class="badge ${p.ativo===true?"status-ativo":"status-inativo"}">${p.ativo===true?"Ativo":"Inativo"}</span></td><td><div class="acoes"><button class="btn btn-secundario btn-mini" data-edit-prof="${p.id}">Editar nome</button><button class="btn ${p.ativo===true?"btn-perigo":"btn-sucesso"} btn-mini" data-toggle-prof="${p.id}">${p.ativo===true?"Inativar":"Ativar"}</button><button class="btn btn-secundario btn-mini" data-reset-prof="${p.id}">Redefinir senha</button></div></td></tr>`).join("")}</tbody></table></div>` : '<div class="vazio">Nenhum usuário cadastrado.</div>';
   $("#resumoProfessores").textContent=`${professores.length} usuário(s)`;
@@ -1951,10 +1928,9 @@ function tabelaOcorrencias(lista, pendente){
 
 
 function dadosResponsavelDaOcorrencia(o){
-  const aluno=estudantes.find(a=>a.id===o.alunoId);
   return {
-    nome: aluno?.responsavel || o.responsavelNome || o.nomeResponsavel || "Não informado",
-    telefone: aluno?.contato || o.responsavelTelefone || o.telefoneResponsavel || o.contatoResponsavel || "Não informado"
+    nome: o.nomeResponsavelContatado || "Não informado",
+    telefone: "Não cadastrado"
   };
 }
 
@@ -1989,8 +1965,6 @@ async function baixarPdfOcorrencia(id){
     </div>
     <div style="border-bottom:1px solid #bbb;padding:8px 0"><strong style="display:inline-block;min-width:190px">Aluno(s):</strong>${esc(nomesEnvolvidos(o))}</div>
     <div style="border-bottom:1px solid #bbb;padding:8px 0"><strong style="display:inline-block;min-width:190px">Turma:</strong>${esc(o.alunoTurma||"")}</div>
-    <div style="border-bottom:1px solid #bbb;padding:8px 0"><strong style="display:inline-block;min-width:190px">Responsável:</strong>${esc(responsavel.nome)}</div>
-    <div style="border-bottom:1px solid #bbb;padding:8px 0"><strong style="display:inline-block;min-width:190px">Telefone do responsável:</strong>${esc(responsavel.telefone)}</div>
     <div style="border-bottom:1px solid #bbb;padding:8px 0"><strong style="display:inline-block;min-width:190px">Registrada por:</strong>${esc(o.professorNome||o.professor||"")}</div>
     <div style="border-bottom:1px solid #bbb;padding:8px 0"><strong style="display:inline-block;min-width:190px">Motivo(s):</strong>${esc(motivosTexto(o))}</div>
     <div style="border-bottom:1px solid #bbb;padding:8px 0"><strong style="display:inline-block;min-width:190px">Registrada em:</strong>${dataBR(o.criadaEm)}</div>
@@ -2058,8 +2032,6 @@ function imprimirOcorrencia(id){
       <div class="sub">E. E. Antônio Francisco dos Santos Junior<br>Sistema de Ocorrências Escolares</div>
       <div class="linha"><strong>Aluno(s):</strong>${esc(nomesEnvolvidos(o))}</div>
       <div class="linha"><strong>Turma:</strong>${esc(o.alunoTurma||"")}</div>
-      <div class="linha"><strong>Responsável:</strong>${esc(responsavel.nome)}</div>
-      <div class="linha"><strong>Telefone do responsável:</strong>${esc(responsavel.telefone)}</div>
       <div class="linha"><strong>Professor:</strong>${esc(o.professorNome||o.professor||"")}</div>
       <div class="linha"><strong>Motivo(s):</strong>${esc(motivosTexto(o))}</div>
       <div class="linha"><strong>Registrada em:</strong>${dataBR(o.criadaEm)}</div>
@@ -2086,8 +2058,6 @@ function detalhes(o, finalizada=false){
  const responsavel=dadosResponsavelDaOcorrencia(o);
  return `
  ${resumoEnvolvidosHtml(o)}
- <div class="detalhe"><strong>Responsável</strong>${esc(responsavel.nome)}</div>
- <div class="detalhe"><strong>Telefone do responsável</strong>${esc(responsavel.telefone)}</div>
  <div class="detalhe"><strong>Professor</strong>${esc(o.professorNome||o.professor||"")}</div>
  <div class="detalhe"><strong>Motivo(s)</strong>${esc(motivosTexto(o))}</div>
  <div class="detalhe"><strong>Descrição</strong>${esc(o.descricao||"")}</div>
@@ -2101,7 +2071,9 @@ function detalhes(o, finalizada=false){
  `;
 }
 function formatarProvidenciaDirecao(o){
- const providencia=o.providenciaDirecao||o.parecerGestor||"";
+ let providencia=o.providenciaDirecao||o.parecerGestor||"";
+ if(providencia==="Advertência verbal") providencia="Orientação verbal";
+ if(providencia==="Advertência por escrito") providencia="Orientação por escrito";
  if(providencia==="Suspensão" && Number(o.diasSuspensao)>0){
    const dias=Number(o.diasSuspensao);
    return `Suspensão (${dias} ${dias===1?"dia":"dias"})`;
@@ -2118,9 +2090,10 @@ function atualizarCampoSuspensao(){
 function atualizarCamposContato(){
  const comunicado=$("#responsavelComunicado").value==="Sim";
  $("#camposContatoResponsavel").classList.toggle("hidden",!comunicado);
+ $("#nomeResponsavelContatado").required=comunicado;
  $("#dataContato").required=comunicado;
  $("#formaContato").required=comunicado;
- if(!comunicado){ $("#dataContato").value=""; $("#formaContato").value=""; }
+ if(!comunicado){ $("#nomeResponsavelContatado").value=""; $("#dataContato").value=""; $("#formaContato").value=""; }
 }
 function atualizarObrigatoriedadeFinalizacao(){
  const finalizando=$("#statusDirecao").value==="Finalizada";
@@ -2161,10 +2134,12 @@ async function abrirOcorrencia(id){
  await registrarAberturaDirecao(ocorrenciaSelecionada);
  $("#detalhesOcorrencia").innerHTML=detalhes(ocorrenciaSelecionada);
  $("#statusDirecao").value=ocorrenciaSelecionada.status||"Pendente";
- $("#providenciaDirecao").value=ocorrenciaSelecionada.providenciaDirecao||"";
+ const providenciaSalva=ocorrenciaSelecionada.providenciaDirecao||"";
+ $("#providenciaDirecao").value=providenciaSalva==="Advertência verbal"?"Orientação verbal":providenciaSalva==="Advertência por escrito"?"Orientação por escrito":providenciaSalva;
  $("#diasSuspensao").value=ocorrenciaSelecionada.diasSuspensao||"";
  $("#devolutivaDirecao").value=ocorrenciaSelecionada.devolutivaDirecao||"";
  $("#responsavelComunicado").value=ocorrenciaSelecionada.responsavelComunicado||"";
+ $("#nomeResponsavelContatado").value=ocorrenciaSelecionada.nomeResponsavelContatado||"";
  $("#dataContato").value=ocorrenciaSelecionada.dataContato||"";
  $("#formaContato").value=ocorrenciaSelecionada.formaContato||"";
  atualizarCampoSuspensao(); atualizarCamposContato(); atualizarObrigatoriedadeFinalizacao();
@@ -2184,6 +2159,7 @@ $("#formFinalizar").addEventListener("submit",async e=>{
  const diasSuspensao=providencia==="Suspensão" ? Number($("#diasSuspensao").value) : 0;
  const devolutiva=$("#devolutivaDirecao").value.trim();
  const responsavelComunicado=$("#responsavelComunicado").value;
+ const nomeResponsavelContatado=responsavelComunicado==="Sim" ? $("#nomeResponsavelContatado").value.trim() : "";
  const dataContato=responsavelComunicado==="Sim" ? $("#dataContato").value : "";
  const formaContato=responsavelComunicado==="Sim" ? $("#formaContato").value : "";
  if(status==="Finalizada" && (!providencia || !devolutiva)){
@@ -2192,8 +2168,8 @@ $("#formFinalizar").addEventListener("submit",async e=>{
  if(providencia==="Suspensão" && (!Number.isInteger(diasSuspensao) || diasSuspensao<1)){
    toast("Informe um número válido de dias de suspensão."); $("#diasSuspensao").focus(); return;
  }
- if(responsavelComunicado==="Sim" && (!dataContato || !formaContato)){
-   toast("Informe a data e a forma de contato com o responsável."); return;
+ if(responsavelComunicado==="Sim" && (!nomeResponsavelContatado || !dataContato || !formaContato)){
+   toast("Informe o nome do responsável, a data e a forma de contato."); return;
  }
  const dados={
    status,
@@ -2202,6 +2178,7 @@ $("#formFinalizar").addEventListener("submit",async e=>{
    devolutivaDirecao:devolutiva,
    diasSuspensao,
    responsavelComunicado,
+   nomeResponsavelContatado,
    dataContato,
    formaContato,
    diretorId:usuarioAtual.uid,
